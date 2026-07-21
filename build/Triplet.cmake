@@ -9,10 +9,10 @@ cmake_minimum_required(VERSION 3.10)
 # ${extern_lib_dir}       - path to the extern libraries (root)
 # ${extern_include_dir}   - include directories in for the extern libraries
 
-if(NOT ROXLU_USE_32BIT)
-  set(tri_arch "x86_64")
-else()
+if(CMAKE_SIZEOF_VOID_P EQUAL 4)
   set(tri_arch "i386")
+else()
+  set(tri_arch "x86_64")
 endif()
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
@@ -20,10 +20,11 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   set(tri_compiler "gcc")
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-  if(MSVC10)
-    set(tri_compiler "vs2010")
+  # MSVC_TOOLSET_VERSION exists since CMake 3.12; fall back to a plain label.
+  if(MSVC_TOOLSET_VERSION)
+    set(tri_compiler "vs${MSVC_TOOLSET_VERSION}")
   else()
-    set(tri_compiler "vs2012")
+    set(tri_compiler "msvc")
   endif()
 endif()
 
