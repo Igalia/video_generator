@@ -3,16 +3,16 @@ Video Generator
 
 The "Video Generator" was created to test long running video and audio encoders
 and video/audio sync. It can generate a continous stream of YUV420P video frames
-with a 44100hz, int16 2 channel audio signal. 
+with a 44100hz, int16 2 channel audio signal.
 
-See video_generator.h for a description on how to use it or take a look at 
+See video_generator.h for a description on how to use it or take a look at
 the example.c file which contains a basic example of how to use the video generator
 to generate an video and audio signal.
 
-The generated video contains 7 vertical bars and 1 horizontal scrolling one. The 
+The generated video contains 7 vertical bars and 1 horizontal scrolling one. The
 horizontal bar moves from to to bottom every 5 seconds. In the center of the video
 you see a black rectangle which displays the time. This time is based on the number
-of generated frames and framerate. It's up to the user to generate enough frames 
+of generated frames and framerate. It's up to the user to generate enough frames
 to have a stable framerate.
 
 <img src="https://farm9.staticflickr.com/8643/15681350220_4705c8885f_o.png" alt="Example of generated video">
@@ -21,9 +21,9 @@ Compiling
 ----------
 You can either just include the `video_generator.c` file in your project or use
 the accompanying `CMakeLists.txt` and `release.sh` files. If you want to make use
-of cmake, make sure that you've installed it. 
+of cmake, make sure that you've installed it.
 
-On Mac, Linux and Windows use the following. For windows users, make sure to 
+On Mac, Linux and Windows use the following. For windows users, make sure to
 execute the `./release.sh` script using a Git Bash shell.
 
 ````sh
@@ -33,6 +33,37 @@ cd build
 
 The example is installed into `install/[system-triplet]/bin/`.
 
+
+Creating a release
+------------------
+
+Releases are built and published by GitHub Actions on any pushed tag
+matching `v*`.
+
+1. Bump the version in `CMakeLists.txt`:
+
+   ```cmake
+   project(video_generator VERSION 0.1.0 LANGUAGES C CXX)
+   ```
+
+   The shared library picks this up as its `VERSION`/`SOVERSION`, so
+   `libvideogenerator.so.0.1.0` is installed with an `.so.0` soname link.
+
+2. Commit the bump and tag it:
+
+   ```sh
+   git commit -am "Release v0.1.0"
+   git tag -a v0.1.0 -m "Release v0.1.0"
+   git push origin v0.1.0
+   ```
+
+3. Pushing the tag triggers `.github/workflows/release.yml`, which builds
+   every platform in `main.yml`, packages each install tree as
+   `video_generator-<tag>-<platform>.zip`, and attaches them to a GitHub
+   release with generated notes.
+
+Keep the tag (`v0.1.0`) and the CMake version (`0.1.0`) in sync — the tag
+carries the `v` prefix, the CMake version does not.
 
 
 Example
@@ -65,7 +96,7 @@ while(1) {
    fwrite((char*)gen.u, gen.ubytes,1, fp);
    fwrite((char*)gen.v, gen.vbytes,1, fp);
 
-   if (gen.frame > 250) { 
+   if (gen.frame > 250) {
      break;
    }
 

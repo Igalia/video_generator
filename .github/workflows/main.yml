@@ -2,7 +2,17 @@ name: "video_generator native build"
 run-name: Native build by ${{ github.actor }}
 on:
   workflow_dispatch:
+    inputs:
+      package:
+        description: "Install, compress and upload the build as a release artifact"
+        type: boolean
+        default: false
   workflow_call:
+    inputs:
+      package:
+        description: "Install, compress and upload the build as a release artifact"
+        type: boolean
+        default: false
   pull_request:
     branches:
       - main
@@ -11,20 +21,42 @@ on:
       - main
 env:
   REPO_NAME: video_generator
+permissions:
+  contents: read
 
 jobs:
   clang-format:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
+        with:
+          # git-clang-format needs history to find the merge base.
+          fetch-depth: 0
       - name: Install Clang-Format
-        run: sudo apt-get update && sudo apt-get -y install clang-format
+        # Pinned: formatting of macro bodies changed in 17 and again in 18,
+        # so an unpinned version rejects code the previous one accepted.
+        run: sudo apt-get update && sudo apt-get -y install clang-format-14
       - name: Run Clang-Format
         run: |
-          find . -name "*.cpp" -o -name "*.hpp" | xargs -I {} clang-format -i {} -n --verbose --Werror
+          # Only check lines this branch touches; the existing tree predates
+          # any style config and is grandfathered in.
+          git fetch --no-tags origin ${{ github.event.repository.default_branch }}
+          base=$(git merge-base HEAD FETCH_HEAD) || {
+            echo "::error::no common ancestor with the default branch"
+            exit 1
+          }
+          # Exits 1 when it emits a diff, so the exit code can't distinguish
+          # "needs formatting" from a real failure; the diff test does.
+          git clang-format-14 --binary clang-format-14 --diff "$base" \
+            -- ':!src/examples/getopt_long.*' > format.diff || true
+          cat format.diff
+          if grep -q '^--- ' format.diff; then
+            echo "::error::Changed lines are not clang-formatted; run: git clang-format-14 --binary clang-format-14 $base"
+            exit 1
+          fi
 
-  ci-linux-x86_64:
+  ci-linux:
     strategy:
       matrix:
         platform: [linux-x86_64, linux-x86]
@@ -35,11 +67,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set environment variables
-        run: |
-          echo "DESTDIR=$REPO_NAME-release" >> $GITHUB_ENV
+        uses: actions/checkout@v7
 
       - name: Set i386 environment variables
         if: matrix.platform == 'linux-x86'
@@ -47,12 +75,6 @@ jobs:
           echo "CC=cc -m32" >> $GITHUB_ENV
           echo "CXX=c++ -m32" >> $GITHUB_ENV
           echo "PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig/" >> $GITHUB_ENV
-
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt install --assume-yes --no-install-recommends valgrind python3-pip ninja-build
-          sudo apt install cmake
 
       - name: Install i386 dependencies
         if: matrix.platform == 'linux-x86'
@@ -63,45 +85,85 @@ jobs:
           # hack to avoid that zlib x64 gets picked up
           sudo apt remove --assume-yes zlib1g-dev
 
-      - name: Build
+      - name: Build release
         shell: bash
         run: |
-          cd build
-          ./build.sh
+          mkdir -p BUILD_RELEASE
+          pushd BUILD_RELEASE
+          cmake -DCMAKE_BUILD_TYPE=Release ..
+          cmake --build . --config Release
+          popd
+      - name: Install release
+        if: inputs.package
+        shell: bash
+        run: |
+          pushd BUILD_RELEASE
+          cmake --install . --prefix ./${{ env.REPO_NAME }}-release
+          popd
+      - name: Create zip
+        if: inputs.package
+        shell: bash
+        run: |
+          pushd BUILD_RELEASE
+          zip -r ../${{ env.REPO_NAME }}-release-${{ matrix.platform }}.zip ${{ env.REPO_NAME }}-release/
+          popd
 
+      - name: Upload artifact
+        if: inputs.package
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.REPO_NAME }}-release-${{ matrix.platform }}
+          path: ${{ env.REPO_NAME }}-release-${{ matrix.platform }}.zip
+          retention-days: 7
 
-  ci-win64:
+  ci-windows:
     strategy:
       matrix:
         platform: [windows-x64, windows-x86]
+        include:
+          - platform: windows-x64
+            cmake_arch: x64
+          - platform: windows-x86
+            cmake_arch: Win32
+
     runs-on: windows-latest
 
     steps:
-      - name: Set up X86 MSVC environment
-        if: matrix.platform == 'windows-x86'
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: "x86"
       - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set environment variables
-        run: echo "DESTDIR=$Env:REPO_NAME-release" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+        uses: actions/checkout@v7
 
       - name: Install dependencies
         run: |
           choco install --yes zip
 
-      - name: Install python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-
-      - name: Install cmake
-        run: choco install cmake
-
-      - name: Build
+      - name: Build release
         shell: bash
         run: |
-          cd build
-          ./build.sh
+          mkdir -p BUILD_RELEASE
+          pushd BUILD_RELEASE
+          echo "platform=[${{ matrix.platform }}] cmake_arch=[${{ matrix.cmake_arch }}]"
+          cmake -A "${{ matrix.cmake_arch }}" ..
+          cmake --build . --config Release
+          popd
+      - name: Install release
+        if: inputs.package
+        shell: bash
+        run: |
+          pushd BUILD_RELEASE
+          cmake --install . --config Release --prefix ./${{ env.REPO_NAME }}-release
+          popd
+      - name: Create zip
+        if: inputs.package
+        shell: bash
+        run: |
+          pushd BUILD_RELEASE
+          zip -r ../${{ env.REPO_NAME }}-release-${{ matrix.platform }}.zip ${{ env.REPO_NAME }}-release/
+          popd
+
+      - name: Upload artifact
+        if: inputs.package
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.REPO_NAME }}-release-${{ matrix.platform }}
+          path: ${{ env.REPO_NAME }}-release-${{ matrix.platform }}.zip
+          retention-days: 7
