@@ -30,88 +30,84 @@ static char* filename;
 #define DEFAULT_FILENAME "output.yuv"
 
 #ifndef _WIN32
-void usage(char *progname) {
-    printf("Usage: %s [options...]\n", progname);
-    printf("  or:  %s [options...]\n", progname);
+void usage(char* progname) {
+  printf("Usage: %s [options...]\n", progname);
+  printf("  or:  %s [options...]\n", progname);
 
-    printf("\n");
-    printf("Mandatory arguments to long options are mandatory for short options too.\n");
+  printf("\n");
+  printf("Mandatory arguments to long options are mandatory for short options too.\n");
 
-    printf("\n");
-    printf("Options:\n");
-    printf("    -h, --help          show this help\n");
-    printf("    -W, --width         width\n");
-    printf("    -H, --height        height\n");
-    printf("    -n, --max-frames    max frames\n");
-    printf("    -F, --fps           fps\n");
-    printf("    -f, --format        format\n");
-    printf("    -b, --bitdepth      bitdepth\n");
-    printf("    -B, --bigendian     byte order\n");
-    printf("    -c, --onecolor      one color background\n");
-    printf("    -o, --output        filename, default " DEFAULT_FILENAME "\n");
+  printf("\n");
+  printf("Options:\n");
+  printf("    -h, --help          show this help\n");
+  printf("    -W, --width         width\n");
+  printf("    -H, --height        height\n");
+  printf("    -n, --max-frames    max frames\n");
+  printf("    -F, --fps           fps\n");
+  printf("    -f, --format        format\n");
+  printf("    -b, --bitdepth      bitdepth\n");
+  printf("    -B, --bigendian     byte order\n");
+  printf("    -c, --onecolor      one color background\n");
+  printf("    -o, --output        filename, default " DEFAULT_FILENAME "\n");
 }
 
-int parse_options(int argc, char **argv) {
-    // prevent unrecognised arguments from being shunted to the audio driver
-    setenv("POSIXLY_CORRECT", "", 1);
+int parse_options(int argc, char** argv) {
+  // prevent unrecognised arguments from being shunted to the audio driver
+  setenv("POSIXLY_CORRECT", "", 1);
 
-    static struct option long_options[] = {
-        {"help",      no_argument,        NULL, 'h'},
-        {"output",    required_argument,  NULL, 'o'},
-        {"width",     required_argument,  NULL, 'W'},
-        {"height",    required_argument,  NULL, 'H'},
-        {"max-frames",required_argument,  NULL, 'n'},
-        {"fps",       required_argument,  NULL, 'f'},
-        {"format",    required_argument,  NULL, 'F'},
-        {"bitdepth",  required_argument,  NULL, 'b'},
-        {"big-endian",required_argument,  NULL, 'B'},
-        {"onecolor",  required_argument,  NULL, 'c'},
-        {NULL,        0,                  NULL,   0}
-    };
+  static struct option long_options[] = {{"help", no_argument, NULL, 'h'},
+                                         {"output", required_argument, NULL, 'o'},
+                                         {"width", required_argument, NULL, 'W'},
+                                         {"height", required_argument, NULL, 'H'},
+                                         {"max-frames", required_argument, NULL, 'n'},
+                                         {"fps", required_argument, NULL, 'f'},
+                                         {"format", required_argument, NULL, 'F'},
+                                         {"bitdepth", required_argument, NULL, 'b'},
+                                         {"big-endian", required_argument, NULL, 'B'},
+                                         {"onecolor", required_argument, NULL, 'c'},
+                                         {NULL, 0, NULL, 0}};
 
-    int opt;
-    while ((opt = getopt_long(argc, argv,
-                              "+hW:H:n:f:F:b:o:Bc:",
-                              long_options, NULL)) > 0) {
-        switch (opt) {
-            default:
-                usage(argv[0]);
-                exit(1);
-            case 'h':
-                usage(argv[0]);
-                exit(0);
-            case 'W':
-                cfg.width = (uint32_t)atoi(optarg);
-                break;
-            case 'H':
-                cfg.height = (uint32_t)atoi(optarg);
-                break;
-            case 'f':
-                cfg.fps = (uint32_t)atoi(optarg);
-                break;
-            case 'F':
-                cfg.format = (uint32_t)atoi(optarg);
-                break;
-            case 'b':
-                cfg.bitdepth = (uint8_t)atoi(optarg);
-                break;
-            case 'n':
-                max_frames = (uint32_t)atoi(optarg);
-                break;
-            case 'B':
-                cfg.byte_order = BYTE_ORDER_BIG_ENDIAN;
-                break;
-            case 'c':
-                cfg.onecolor = (uint8_t)atoi(optarg);
-                break;
-            case 'o':
-                free(filename);
-                filename = (char*)malloc(strlen(optarg) + 1);
-                strcpy (filename,optarg);
-                break;
-        }
+  int opt;
+  while ((opt = getopt_long(argc, argv, "+hW:H:n:f:F:b:o:Bc:", long_options, NULL)) > 0) {
+    switch (opt) {
+    default:
+      usage(argv[0]);
+      exit(1);
+    case 'h':
+      usage(argv[0]);
+      exit(0);
+    case 'W':
+      cfg.width = (uint32_t)atoi(optarg);
+      break;
+    case 'H':
+      cfg.height = (uint32_t)atoi(optarg);
+      break;
+    case 'f':
+      cfg.fps = (uint32_t)atoi(optarg);
+      break;
+    case 'F':
+      cfg.format = (uint32_t)atoi(optarg);
+      break;
+    case 'b':
+      cfg.bitdepth = (uint8_t)atoi(optarg);
+      break;
+    case 'n':
+      max_frames = (uint32_t)atoi(optarg);
+      break;
+    case 'B':
+      cfg.byte_order = BYTE_ORDER_BIG_ENDIAN;
+      break;
+    case 'c':
+      cfg.onecolor = (uint8_t)atoi(optarg);
+      break;
+    case 'o':
+      free(filename);
+      filename = (char*)malloc(strlen(optarg) + 1);
+      strcpy(filename, optarg);
+      break;
     }
-    return optind;
+  }
+  return optind;
 }
 #endif
 
@@ -119,7 +115,7 @@ int main(int argc, char* argv[]) {
 
   FILE* video_fp = NULL;
   filename = (char*)malloc(strlen(DEFAULT_FILENAME) + 1);
-  strcpy (filename,DEFAULT_FILENAME);
+  strcpy(filename, DEFAULT_FILENAME);
   int res;
 
   video_generator gen;
@@ -141,33 +137,24 @@ int main(int argc, char* argv[]) {
     exit(1);
   }
 
-  printf("Create a YUV file: %s \nwidth: %d\nheight: %d \nfps: %d\nframes: %d\nformat: %d\nbitdepth: %d\nbigendian:%d\n",
-            filename,
-            cfg.width,
-            cfg.height,
-            cfg.fps,
-            max_frames,
-            cfg.format,
-            cfg.bitdepth,
-            cfg.byte_order);
+  printf("Create a YUV file: %s \nwidth: %d\nheight: %d \nfps: %d\nframes: %d\nformat: "
+         "%d\nbitdepth: %d\nbigendian:%d\n",
+         filename, cfg.width, cfg.height, cfg.fps, max_frames, cfg.format, cfg.bitdepth,
+         cfg.byte_order);
 
   while (gen.frame < max_frames) {
     video_generator_update(&gen);
 
     // write video planes to a file
-    fwrite((char*)gen.y, gen.ybytes, 1,  video_fp);
+    fwrite((char*)gen.y, gen.ybytes, 1, video_fp);
     fwrite((char*)gen.u, gen.ubytes, 1, video_fp);
     fwrite((char*)gen.v, gen.vbytes, 1, video_fp);
-
   }
   printf("Frames generated: %zu\n", (size_t)gen.frame);
 
-fclose(video_fp);
-free(filename);
-video_generator_clear(&gen);
+  fclose(video_fp);
+  free(filename);
+  video_generator_clear(&gen);
 }
 
 /* ----------------------------------------------------------------------------------- */
-
-
-

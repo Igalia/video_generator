@@ -148,65 +148,67 @@ extern "C" {
 /*                          T H R E A D I N G                                          */
 /* ----------------------------------------------------------------------------------- */
 
-  /* ------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
 
-  struct thread;                                                 /* Forward declared. */
-  struct mutex;                                                  /* Forward declared. */
-  typedef struct thread thread;
-  typedef struct mutex mutex;
-  typedef void*(*thread_function)(void* param);                  /* The thread function you need to write. */
+struct thread; /* Forward declared. */
+struct mutex;  /* Forward declared. */
+typedef struct thread thread;
+typedef struct mutex mutex;
+typedef void* (*thread_function)(void* param); /* The thread function you need to write. */
 
-  thread* thread_alloc(thread_function func, void* param);       /* Create a new thread handle. Don't forget to call thread_free(). */
-  int thread_free(thread* t);                                    /* Frees the thread that was allocated by `thread_alloc()` */
-  int thread_join(thread* t);                                    /* Join the thread. */
-  int mutex_init(mutex* m);                                      /* Initialize a mutex. */
-  int mutex_destroy(mutex* m);                                   /* Destroy the mutex. */
-  int mutex_lock(mutex* m);                                      /* Lock the mutex. */
-  int mutex_unlock(mutex* m);                                    /* Unlock the mutex. */
+thread*
+thread_alloc(thread_function func,
+             void* param);   /* Create a new thread handle. Don't forget to call thread_free(). */
+int thread_free(thread* t);  /* Frees the thread that was allocated by `thread_alloc()` */
+int thread_join(thread* t);  /* Join the thread. */
+int mutex_init(mutex* m);    /* Initialize a mutex. */
+int mutex_destroy(mutex* m); /* Destroy the mutex. */
+int mutex_lock(mutex* m);    /* Lock the mutex. */
+int mutex_unlock(mutex* m);  /* Unlock the mutex. */
 
-  /* ------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
 
 #if defined(_WIN32)
 
-    #define WIN32_LEAN_AND_MEAN
-    #define NOMINMAX
-    #include <windows.h>
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
 
-    struct thread {
-      HANDLE handle;
-      DWORD thread_id;
-      thread_function func;
-      void* user;
-    };
+struct thread {
+  HANDLE handle;
+  DWORD thread_id;
+  thread_function func;
+  void* user;
+};
 
-    struct mutex {
-      HANDLE handle;
-    };
+struct mutex {
+  HANDLE handle;
+};
 
-    DWORD WINAPI thread_wrapper_function(LPVOID param);
+DWORD WINAPI thread_wrapper_function(LPVOID param);
 
 #elif defined(__linux) || defined(__APPLE__)
 
-    #include <string.h>
-    #include <stdlib.h>
-    #include <pthread.h>
+#include <string.h>
+#include <stdlib.h>
+#include <pthread.h>
 
-    struct thread {
-      pthread_t handle;
-      thread_function func;
-      void* user;
-    };
+struct thread {
+  pthread_t handle;
+  thread_function func;
+  void* user;
+};
 
-    struct mutex {
-      pthread_mutex_t handle;
-    };
+struct mutex {
+  pthread_mutex_t handle;
+};
 
-    void* thread_function_wrapper(void* t);
+void* thread_function_wrapper(void* t);
 
 #endif
 
 #define BYTE_ORDER_LITTLE_ENDIAN 0
-#define BYTE_ORDER_BIG_ENDIAN    1
+#define BYTE_ORDER_BIG_ENDIAN 1
 
 /* ----------------------------------------------------------------------------------- */
 /*                          V I D E O   G E N E R A T O  R                             */
@@ -229,7 +231,8 @@ typedef struct video_generator_char video_generator_char;
    @param nbytes         The number of bytes in `samples`
    @param nframes        The number of frames in `samples`.
 */
-typedef void(*video_generator_audio_callback)(const int16_t* samples, uint64_t nbytes, uint32_t nframes);
+typedef void (*video_generator_audio_callback)(const int16_t* samples, uint64_t nbytes,
+                                               uint32_t nframes);
 
 struct video_generator_char {
   char id;
@@ -247,8 +250,8 @@ struct video_generator_settings {
   uint32_t height;
   uint32_t fps;
   uint32_t format;
-  uint8_t  byte_order;
-  uint8_t  bitdepth;
+  uint8_t byte_order;
+  uint8_t bitdepth;
   uint8_t onecolor;
   uint16_t bip_frequency;
   uint16_t bop_frequency;
@@ -258,49 +261,55 @@ struct video_generator_settings {
 struct video_generator {
 
   /* video  */
-  uint64_t frame;                                         /* current frame number, which is incremented by one in `video_generator_update`. */
-  uint8_t* y;                                             /* points to the y-plane. */
-  uint8_t* u;                                             /* points to the u-plane. */
-  uint8_t* v;                                             /* points to the v-plane. */
-  uint32_t width;                                         /* width of the video frame (and y-plane). */
-  uint32_t height;                                        /* height of the video frame (and y-plane). */
-  uint32_t ybytes;                                        /* number of bytes in the y-plane. */
-  uint32_t ubytes;                                        /* number of bytes in the u-plane. */
-  uint32_t vbytes;                                        /* number of bytes in the v-plane. */
-  uint32_t nbytes;                                        /* total number of bytes in the allocated buffer for the yuv420p buffer. */
-  double   u_factor;                                      /* Provide a factor to change the colorspace*/
-  double   v_factor;                                      /* Provide a factor to change the colorspace*/
-  uint8_t  pixel_size_in_bytes;                           /* Size of the word to express the pixel 8bits = 1 byte 16 bits = 2 bytes*/
-  uint8_t  pixel_factor;                                  /* pixel factor to convert from 8 bits to 10 or 12 bits*/
-  uint8_t  byte_order;                                    /* byte order or endinness for the LSB and MSB, 0 for little endian*/
-  uint32_t fps_num;                                       /* framerate numerator e.g. 1. */
-  uint32_t fps_den;                                       /* framerate denominator e.g. 25. */
-  double fps;                                             /* framerate in microseconds, 1 fps == 1.000.000 us. */
-  double step;                                            /* used to create/translate the moving bar. */
-  double perc;                                            /* position of the moving bar in percentages. */
-  video_generator_char chars[RXS_MAX_CHARS];              /* bitmap characters, `0-9` and `:` */
-  uint32_t font_w;                                        /* width of the bitmap (which is stored in video_generator.c). */
-  uint32_t font_h;                                        /* height of the bitmap (which is stored in video_generator.c). */
+  uint64_t
+      frame;  /* current frame number, which is incremented by one in `video_generator_update`. */
+  uint8_t* y; /* points to the y-plane. */
+  uint8_t* u; /* points to the u-plane. */
+  uint8_t* v; /* points to the v-plane. */
+  uint32_t width;  /* width of the video frame (and y-plane). */
+  uint32_t height; /* height of the video frame (and y-plane). */
+  uint32_t ybytes; /* number of bytes in the y-plane. */
+  uint32_t ubytes; /* number of bytes in the u-plane. */
+  uint32_t vbytes; /* number of bytes in the v-plane. */
+  uint32_t nbytes; /* total number of bytes in the allocated buffer for the yuv420p buffer. */
+  double u_factor; /* Provide a factor to change the colorspace*/
+  double v_factor; /* Provide a factor to change the colorspace*/
+  uint8_t pixel_size_in_bytes; /* Size of the word to express the pixel 8bits = 1 byte 16 bits = 2
+                                  bytes*/
+  uint8_t pixel_factor;        /* pixel factor to convert from 8 bits to 10 or 12 bits*/
+  uint8_t byte_order;          /* byte order or endinness for the LSB and MSB, 0 for little endian*/
+  uint32_t fps_num;            /* framerate numerator e.g. 1. */
+  uint32_t fps_den;            /* framerate denominator e.g. 25. */
+  double fps;                  /* framerate in microseconds, 1 fps == 1.000.000 us. */
+  double step;                 /* used to create/translate the moving bar. */
+  double perc;                 /* position of the moving bar in percentages. */
+  video_generator_char chars[RXS_MAX_CHARS]; /* bitmap characters, `0-9` and `:` */
+  uint32_t font_w; /* width of the bitmap (which is stored in video_generator.c). */
+  uint32_t font_h; /* height of the bitmap (which is stored in video_generator.c). */
   uint32_t font_line_height;
-  uint8_t onecolor;                                       /* Generate only one color*/
+  uint8_t onecolor; /* Generate only one color*/
 
   /* Audio */
-  uint16_t audio_nchannels;                               /* number of audio channels, for now always 2. */
-  uint8_t  audio_nseconds;                                /* the number of seconds of audio we have in the audio_buffer. Always 4. */
-  uint16_t audio_samplerate;                              /* for now always: 44100 */
-  uint16_t audio_bip_frequency;                           /* frequency for the bip sound, 600hz. */
-  uint16_t audio_bop_frequency;                           /* frequency for the bop sound, 300hz. */
-  uint32_t audio_bip_millis;                              /* number of millis for the bip sound */
-  uint32_t audio_bop_millis;                              /* number of millis for the bop sound */
-  size_t   audio_nbytes;                                  /* number of bytes in audio_buffer. */
-  uint32_t audio_nsamples;                                /* number of samples that are passed to the audio callback whenever needed. */
-  int16_t* audio_buffer;                                  /* this will contain the audio samples */
-  video_generator_audio_callback audio_callback;          /* will be called from the thread when the user needs to process audio. */
-  thread* audio_thread;                                   /* the audio callback is called from another thread to simulate microphone input.*/
-  mutex audio_mutex;                                      /* used to sync. shared data */
-  uint8_t audio_thread_must_stop;                         /* is set to 1 when the thread needs to stop */
-  uint8_t audio_is_bip;                                   /* is set to 1 as soon as the bip audio part it passed into the callback. */
-  uint8_t audio_is_bop;                                   /* is set to 1 as soon as the bop audio part is passed into the callback. */
+  uint16_t audio_nchannels; /* number of audio channels, for now always 2. */
+  uint8_t
+      audio_nseconds; /* the number of seconds of audio we have in the audio_buffer. Always 4. */
+  uint16_t audio_samplerate;    /* for now always: 44100 */
+  uint16_t audio_bip_frequency; /* frequency for the bip sound, 600hz. */
+  uint16_t audio_bop_frequency; /* frequency for the bop sound, 300hz. */
+  uint32_t audio_bip_millis;    /* number of millis for the bip sound */
+  uint32_t audio_bop_millis;    /* number of millis for the bop sound */
+  size_t audio_nbytes;          /* number of bytes in audio_buffer. */
+  uint32_t
+      audio_nsamples; /* number of samples that are passed to the audio callback whenever needed. */
+  int16_t* audio_buffer; /* this will contain the audio samples */
+  video_generator_audio_callback
+      audio_callback;   /* will be called from the thread when the user needs to process audio. */
+  thread* audio_thread; /* the audio callback is called from another thread to simulate microphone
+                           input.*/
+  mutex audio_mutex;    /* used to sync. shared data */
+  uint8_t audio_thread_must_stop; /* is set to 1 when the thread needs to stop */
+  uint8_t audio_is_bip; /* is set to 1 as soon as the bip audio part it passed into the callback. */
+  uint8_t audio_is_bop; /* is set to 1 as soon as the bop audio part is passed into the callback. */
 };
 
 int video_generator_init(video_generator_settings* cfg, video_generator* g);
