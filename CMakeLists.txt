@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(video_generator VERSION 0.1.0 LANGUAGES C CXX)
+project(video_generator VERSION 0.1.1 LANGUAGES C CXX)
 
 if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID MATCHES "Clang")
     set(COMMON_COMPILE_FLAGS "-Wall -Wconversion -Wformat -Werror -Wextra")
